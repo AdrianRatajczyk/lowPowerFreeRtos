@@ -288,6 +288,7 @@ void RTC_WKUP_IRQHandler(void)
 //	}
 //	portCLEAR_INTERRUPT_MASK_FROM_ISR( ulDummy );
 
+
 	if(RTC_GetITStatus(RTC_IT_WUT) != RESET)
 	{
 		RTC_ClearITPendingBit(RTC_IT_WUT);
