@@ -106,8 +106,11 @@ static FATFS _fileSystem;
 
 static uint8_t buffer [28];
 
+
 void __rtcConfig(void);
 void __RTC_Config();
+void LED_Init();
+//void vPortSetupTimerInterrupt( void );
 
 /*---------------------------------------------------------------------------------------------------------------------+
 | root task
@@ -119,6 +122,8 @@ int main(void)
 
 	gpioInitialize();
 	spiInitialize();
+
+	LED_Init();
 
 	enum Error error = usartInitialize();
 
@@ -133,7 +138,11 @@ int main(void)
 	/*	Special delay for debugging because after scheduler start
 	 * 	it may be hard to catch core in run mode to connect to debugger
 	 */
-	for(int i=0; i<9000; i++){ LED1_bb ^= 1; for(int i=900000; i<1; i++); }
+	for(unsigned long i=0; i<30; i++)
+	{
+		for(unsigned long j=0; j<1000000; j++){}
+		LED1_bb ^= 1;
+	}
 
 	commandRegister(&_dirCommandDefinition);
 	commandRegister(&_runtimestatsCommandDefinition);
@@ -147,10 +156,10 @@ int main(void)
 }
 
 // function to configure a timer to generate a periodic interrupt
-void vPortSetupTimerInterrupt(void)
-{
-
-}
+//void vPortSetupTimerInterrupt( void )
+//{
+//	__RTC_Config();
+//}
 
 void GPIO_Init(void)
 {
@@ -159,6 +168,12 @@ void GPIO_Init(void)
 	RCC->AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN | RCC_AHBENR_GPIOCEN | RCC_AHBENR_GPIODEN |
 			RCC_AHBENR_GPIOEEN | RCC_AHBENR_GPIOHEN;
 
+}
+
+void LED_Init(void)
+{
+	gpioConfigurePin(LED_GPIO, LED_pin, GPIO_OUT_PP_40MHz);
+	gpioConfigurePin(LED_GPIO, LED_pin_1, GPIO_OUT_PP_40MHz);
 }
 
 static void _sysInit(void)
@@ -288,13 +303,15 @@ static void _heartbeatTask(void *parameters)
 
 	xLastHeartBeat = xTaskGetTickCount();
 
-	struct acc_t * accelerometer = new_acc();
 
-	accelerometer->acc_init(accelerometer);
+
+	//struct acc_t * accelerometer = new_acc();
+
+	//accelerometer->acc_init(accelerometer);
 
 	//rtcFastStart();
 
-	__RTC_Config();
+	//__RTC_Config();
 
 	//__rtcConfig();
 
@@ -304,9 +321,11 @@ static void _heartbeatTask(void *parameters)
 
 		//accelerometer->acc_checkVersion(accelerometer, buffer);
 
-		licznik = RTC_GetWakeUpCounter();
+		LED_bb ^= 1;
 
-		vTaskDelay(40/portTICK_RATE_MS);	//Then go sleep
+		//licznik = RTC_GetWakeUpCounter();
+
+		vTaskDelay(500/portTICK_RATE_MS);	//Then go sleep
 	}
 
 }
@@ -496,44 +515,41 @@ void __RTC_Config()
 	EXTI_InitTypeDef EXTI_InitStructure;
 
 	/* Enable the PWR clock */
-  RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
 
+	/* Allow access to RTC */
+	PWR_RTCAccessCmd(ENABLE);
 
-  /* Allow access to RTC */
-  PWR_RTCAccessCmd(ENABLE);
+	/* Enable the LSI OSC */
+	RCC_LSICmd(ENABLE);	// The RTC Clock may varies due to LSI frequency dispersion
 
-  /* Enable the LSI OSC */
-  RCC_LSICmd(ENABLE);				// The RTC Clock may varies due to LSI frequency dispersion
+	/* Wait till LSI is ready */
+	while (RCC_GetFlagStatus(RCC_FLAG_LSIRDY) == RESET)
+		;
 
-
-  /* Wait till LSI is ready */
-  while(RCC_GetFlagStatus(RCC_FLAG_LSIRDY) == RESET);
-
-
-  /* Select the RTC Clock Source */
-  RCC_RTCCLKConfig(RCC_RTCCLKSource_LSI);
+	/* Select the RTC Clock Source */
+	RCC_RTCCLKConfig(RCC_RTCCLKSource_LSI);
 
 	/* Enable the RTC Clock */
-  RCC_RTCCLKCmd(ENABLE);
+	RCC_RTCCLKCmd(ENABLE);
 
-
-  /* Wait for RTC APB registers synchronisation */
-  RTC_WaitForSynchro();
+	/* Wait for RTC APB registers synchronisation */
+	RTC_WaitForSynchro();
 
 	/* EXTI configuration *******************************************************/
-  EXTI_ClearITPendingBit(EXTI_Line20);
-  EXTI_InitStructure.EXTI_Line = EXTI_Line20;
-  EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
-  EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
-  EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-  EXTI_Init(&EXTI_InitStructure);
+	EXTI_ClearITPendingBit(EXTI_Line20);
+	EXTI_InitStructure.EXTI_Line = EXTI_Line20;
+	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
+	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
+	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+	EXTI_Init(&EXTI_InitStructure);
 
 	// Configuring RTC_WakeUp interrupt
-  NVIC_InitStructure.NVIC_IRQChannel = RTC_WKUP_IRQn;
-  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
-  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-  NVIC_Init(&NVIC_InitStructure);
+	NVIC_InitStructure.NVIC_IRQChannel = RTC_WKUP_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
 
 //  /* RTC Wakeup Interrupt Generation: Clock Source: RTCDiv_16, Wakeup Time Base: 4s , RTCDiv_4 WTB: 1s*/
 //    RTC_WakeUpClockConfig(RTC_WakeUpClock_RTCCLK_Div4);
@@ -541,8 +557,8 @@ void __RTC_Config()
 //    //(0x1FFF); // -> 8100 Div4 = 1s
 //    //(0x320) ; // -> 800 Div4 = 0.1s
 
-  	// RTC wake up counter disable
-  	RTC_WakeUpCmd(DISABLE);
+	// RTC wake up counter disable
+	RTC_WakeUpCmd(DISABLE);
 
 	// RTC Wakeup Configuration
 	RTC_WakeUpClockConfig(RTC_WakeUpClock_RTCCLK_Div16);
@@ -565,4 +581,27 @@ void __RTC_Config()
 	EXTI_ClearITPendingBit(EXTI_Line20);
 }
 
-
+// RTC Wakeup through EXTI line interrupt
+//extern "C" void RTC_WKUP_IRQHandler(void) __attribute((interrupt));
+//void RTC_WKUP_IRQHandler(void)
+//{
+////	unsigned long ulDummy;
+////
+////	//	/* If using preemption, also force a context switch. */
+////	#if configUSE_PREEMPTION == 1
+////		*(portNVIC_INT_CTRL) = portNVIC_PENDSVSET;
+////	#endif
+////
+////	ulDummy = portSET_INTERRUPT_MASK_FROM_ISR();
+////	{
+////		vTaskIncrementTick();
+////	}
+////	portCLEAR_INTERRUPT_MASK_FROM_ISR( ulDummy );
+//
+//
+//	if(RTC_GetITStatus(RTC_IT_WUT) != RESET)
+//	{
+//		RTC_ClearITPendingBit(RTC_IT_WUT);
+//		EXTI_ClearITPendingBit(EXTI_Line20);
+//	}
+//}

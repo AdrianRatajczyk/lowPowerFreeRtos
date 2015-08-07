@@ -5,6 +5,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "FreeRTOSConfig.h"
+#include "portmacro.h"
 
 #include "gpio.h"
 #include "rtc.h"
@@ -73,7 +74,7 @@ void system_idle_task(void *parameters)
 			     */
 			    PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFI);
 
-			    /* Enable Wakeup Counter */
+			    /* Disable Wakeup Counter */
 			    RTC_WakeUpCmd(DISABLE);
 
 			    /* After wake-up from STOP reconfigure the system clock */
@@ -200,4 +201,32 @@ void rtcConfig(void)
 
   /* Enable the Wakeup Interrupt */
   RTC_ITConfig(RTC_IT_WUT, ENABLE);
+}
+
+void vApplicationSleep( portTickType xExpectedIdleTime )
+{
+	/* Enter Stop Mode */
+	/* After this microcontroller will be invisible for debuger and will be able
+	 * to wakup only by RESET PIN or RTC wakeup
+	 */
+	PWR_EnterSTOPMode(PWR_Regulator_LowPower, PWR_STOPEntry_WFI);
+
+	/* After wake-up from STOP reconfigure the system clock */
+	_configureHSI();
+
+	rccStartPll(RCC_PLL_INPUT_HSI, HSI_VALUE, FREQUENCY);
+
+	gpioInitialize();
+	spiInitialize();
+
+	gpioConfigurePin(ACC_OE_RESET_MOSI_GPIO, ACC_OE_RESET_MOSI_PIN,
+			ACC_OE_RESET_MOSI_CONFIGURATION);
+	gpioConfigurePin(ACC_OE_SCK_NSS_GPIO, ACC_OE_SCK_NSS_PIN,
+			ACC_OE_SCK_NSS_CONFIGURATION);
+	gpioConfigurePin(ACC_OE_INT_MISO_GPIO, ACC_OE_INT_MISO_PIN,
+			ACC_OE_INT_MISO_CONFIGURATION);
+
+	ACC_OE_RESET_MOSI_bb = 1;
+	ACC_OE_SCK_NSS_bb = 1;
+	ACC_OE_INT_MISO_bb = 1;
 }

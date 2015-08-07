@@ -93,7 +93,7 @@
 #define configUSE_IDLE_HOOK				0
 #define configUSE_TICK_HOOK				0
 #define configCPU_CLOCK_HZ				rccGetCoreFrequency()
-#define configTICK_RATE_HZ				( ( portTickType ) 1000 )     //TODO: częstotliwość przerwania
+#define configTICK_RATE_HZ				( ( portTickType ) 100 )     //TODO: częstotliwość przerwania
 #define configMAX_PRIORITIES			( ( unsigned portBASE_TYPE ) 5 )
 #define configMINIMAL_STACK_SIZE		( ( unsigned short ) 64 )
 #define configMAX_TASK_NAME_LEN			12
@@ -146,7 +146,8 @@ See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
 
 #define vPortSVCHandler						SVC_Handler
 #define xPortPendSVHandler					PendSV_Handler
-#define xPortSysTickHandler					SysTick_Handler      //TODO:
+//#define xPortSysTickHandler					SysTick_Handler      //TODO:
+#define xPortSysTickHandler					RTC_WKUP_IRQHandler
 
 /*---------------------------------------------------------------------------------------------------------------------+
 | Priorities and stacks for tasks in the system

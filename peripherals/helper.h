@@ -39,6 +39,7 @@ extern "C" {
 #endif
 
 void configureTimerForRuntimestats(void);
+void _RTC_WKUP_Config(void);
 
 #ifdef __cplusplus
 }
