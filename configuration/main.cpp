@@ -110,6 +110,7 @@ static uint8_t buffer [28];
 void __rtcConfig(void);
 void __RTC_Config();
 void LED_Init();
+void RTC_WKUP_test();
 //void vPortSetupTimerInterrupt( void );
 
 /*---------------------------------------------------------------------------------------------------------------------+
@@ -174,6 +175,13 @@ void LED_Init(void)
 {
 	gpioConfigurePin(LED_GPIO, LED_pin, GPIO_OUT_PP_40MHz);
 	gpioConfigurePin(LED_GPIO, LED_pin_1, GPIO_OUT_PP_40MHz);
+}
+
+void RTC_WKUP_test(void)
+{
+	// if program will pass these two loops, RTC_WKUP_interrupt is working well
+	while(RTC_GetITStatus(RTC_IT_WUT) == RESET);
+	while(RTC_GetITStatus(RTC_IT_WUT) != RESET);
 }
 
 static void _sysInit(void)
@@ -312,6 +320,8 @@ static void _heartbeatTask(void *parameters)
 	//__RTC_Config();
 
 	//__rtcConfig();
+
+	RTC_WKUP_test();
 
 	for(;;){
 
