@@ -59,6 +59,7 @@ void configureTimerForRuntimestats(void)
 	//TODO: tutaj implementacja timera
 }
 
+// konfiguracja przerwania RTC_WKUP
 void _RTC_WKUP_Config()
 {
 	NVIC_InitTypeDef NVIC_InitStructure;
