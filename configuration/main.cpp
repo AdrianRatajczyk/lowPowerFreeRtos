@@ -49,6 +49,8 @@
 
 #include "mma955x_drv.h"
 
+#include "adc.h"
+
 /* Private variables ---------------------------------------------------------*/
 
 
@@ -136,6 +138,15 @@ int main(void)
 
 	gpioInitialize();
 
+	//TODO: tutaj wjebać ADC
+	ADC_Init();
+	uint16_t ADC_Value;
+	while(1)
+	{
+		ADC_Value = ADC_SingleMeas();
+	}
+
+
 	/*	Special delay for debugging because after scheduler start
 	 * 	it may be hard to catch core in run mode to connect to debugger
 	 */
@@ -143,6 +154,7 @@ int main(void)
 	{
 		for(unsigned long j=0; j<1000000; j++){}
 		LED1_bb ^= 1;
+		//while(1);
 	}
 
 	commandRegister(&_dirCommandDefinition);
@@ -330,6 +342,8 @@ static void _heartbeatTask(void *parameters)
 		//accelerometer->acc_checkVersion(accelerometer, buffer);
 
 		//licznik = RTC_GetWakeUpCounter();
+
+
 
 		LED_bb ^= 1;
 
